@@ -209,6 +209,23 @@ class MultiAgentDemo:
             with st.chat_message("user"):
                 st.markdown(transcription)
 
+    def tool_use_completion(self):
+        
+        try:
+            # Run a new assistant response to enable the assistant to call another tool or return a response
+            response = self.client.chat.completions.create(
+                model=st.session_state["openai_model"],
+                messages=st.session_state.messages,
+                stream=False,
+                tools=self.tools,
+            )
+            print(f">>>> Assistant response after tool use:\n\n{response}")
+            self.process_unstreamed_response(response)
+        
+        except Exception as e:
+            print(f'Error in tool_use_completion: {e}')
+            return st.error(f"Error in tool_use_completion: {e}")
+    
     def handle_function_input(self, func_name, query, tool_call_id):
         try:
             if func_name == "fetch_db_structure":
@@ -223,18 +240,6 @@ class MultiAgentDemo:
                 st.session_state.messages.append(function_call_result_message)
                 print("Tool call message constructed and appended to messages")
 
-                print(st.session_state.messages)
-
-                # Run a new assistant response to enable the assistant to call another tool or return a response
-                response = self.client.chat.completions.create(
-                    model=st.session_state["openai_model"],
-                    messages=st.session_state.messages,
-                    stream=False,
-                    tools=self.tools,
-                )
-                print(f"Made new Chat Completion based on tool result:\n\n{response}")
-                self.process_unstreamed_response(response)
-
 
             elif func_name == "execute_query":
                 st.markdown("Searching the database for an answer...")
@@ -247,18 +252,8 @@ class MultiAgentDemo:
                     "tool_call_id": tool_call_id
                 }
                 st.session_state.messages.append(function_call_result_message)
+                print("Tool call message constructed and appended to messages")
                 # Print the query and the result as messages
-                
-                
-                # Run a new assistant response to enable the assistant to call another tool or return a response
-                response = self.client.chat.completions.create(
-                    model=st.session_state["openai_model"],
-                    messages=st.session_state.messages,
-                    stream=False,
-                    tools=self.tools,
-                )
-                print(f">>Post-query assistant response: {response}")
-                self.process_unstreamed_response(response)
 
         except Exception as e:
             print(f'Error in function call: {e}')
@@ -284,34 +279,45 @@ class MultiAgentDemo:
 
     def process_unstreamed_response(self, response):
         # This method is a helper for assistant responses and function calls - same processing occurs when a new chat completion is created if stream=False
-        tool_call = None
+        tool_calls = None
         # Must append a message with initial tool call before giving tool response to the assistant
         if response.choices[0].message.tool_calls is not None:
-            tool_call = response.choices[0].message.tool_calls[0]
-        if tool_call is not None: # send to function call if model used a tool
+            tool_calls = response.choices[0].message.tool_calls
+        if tool_calls is not None: # send to function call if model used a tool
             # print for debug
-            print(f'Assistant Tool Call Message: {response.choices[0].message}')
+            print(f'Assistant Tool Call Message: {tool_calls}')
+            
+            # append the full message containing 1 or more tool calls
             st.session_state.messages.append(response.choices[0].message)
-            # print for debug
-            print(tool_call)
+            
+            # process each tool_call in the list to ensure none are missed
+            for tool_call in tool_calls:
+            
+                # print for debug
+                print(tool_call)
 
-            # Set up function call
-            tool_call_id = tool_call.id
-            func_name = tool_call.function.name
-            arguments = tool_call.function.arguments
-            arguments = json.loads(arguments) if isinstance(arguments, str) else arguments
-            print('Tool Call:\nid>>' + tool_call_id +'\nname>>' + func_name + '\nargs>>' + str(arguments))
-            if 'query' in arguments:
-                query = arguments.get('query')
-            else:
-                query = None
+                # Set up function call
+                tool_call_id = tool_call.id
+                func_name = tool_call.function.name
+                arguments = tool_call.function.arguments
+                arguments = json.loads(arguments) if isinstance(arguments, str) else arguments
+                print('Tool Call:\nid>>' + tool_call_id +'\nname>>' + func_name + '\nargs>>' + str(arguments))
+                if 'query' in arguments:
+                    query = arguments.get('query')
+                else:
+                    query = None
+                    
+                print(f"Attempting function call - Name: {func_name}, Query: {query}")
                 
-            print(f"Attempting function call - Name: {func_name}, Query: {query}")
-            self.handle_function_input(func_name, query, tool_call_id)
+                # Run each tool call and add the response to messages using handle_function_input
+                self.handle_function_input(func_name, query, tool_call_id)
+
+            # Once the tool_calls loop finishes, send the updated tool messages to the assistant for a response
+            self.tool_use_completion()
 
         # If there is no tool call, deal with a standard message
         text_response = response.choices[0].message.content
-        if text_response and not tool_call:
+        if text_response and not tool_calls:
             st.markdown(text_response)
             st.session_state.messages.append({"role": "assistant", "content": text_response})
             self.text_response = text_response
