@@ -45,6 +45,11 @@ class QueryTest:
             "foreign_keys": foreign_keys
         }
     
+    def llm_query(self, llm_input):
+        result = self.cursor.execute(llm_input)
+        return result
+
+    
     def unsecured_fstring_artist_by_track(self):
         track_name = input("Enter the track title:\n")
         
@@ -113,7 +118,7 @@ class QueryTest:
 # Main method to allow user to try different database files and queries from the console
 def main():
     directory = "../database/"
-    filename = input("Database file: Enter the filename with its extension\n")
+    filename = "Chinook_Sqlite.sqlite" # input("Database file: Enter the filename with its extension\n")
     path = f'{directory}{filename}'
     print(f"Using database file: {path}")
 

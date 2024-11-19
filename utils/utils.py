@@ -70,6 +70,10 @@ class SQLQuery:
             "indexes": indexes,
             "foreign_keys": foreign_keys
         }
+    
+    def llm_query(self, llm_input):
+        result = self.cursor.execute(llm_input)
+        return result
 
     def get_triggers(self):
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='trigger';")

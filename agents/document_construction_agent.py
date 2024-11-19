@@ -1,6 +1,6 @@
 from openai import OpenAI
 import sqlite3
-from utils import SQLQuery, log_action, load_api_key
+from Repos.Personal.affinityPractice.multiAgentWorkflow.utils.utils import SQLQuery, log_action, load_api_key
 
 client = OpenAI()
 client.api_key = load_api_key()

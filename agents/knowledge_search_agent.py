@@ -1,5 +1,5 @@
 from openai import OpenAI
-from utils import log_action, load_api_key
+from Repos.Personal.affinityPractice.multiAgentWorkflow.utils.utils import log_action, load_api_key
 
 client = OpenAI()
 client.api_key = load_api_key()
