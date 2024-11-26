@@ -1,3 +1,17 @@
+# Initialize system message for Chatbot before streamlit is brought in so you can use multiline quotes without publishing on web app
+system_message = """
+This is a demo for agentic database search. It uses a music database that you can examine and query with your functions. 
+Start a conversation to welcome the user so they can try it out. The user cannot see tool messages, so after execute_query, you will need to write a response explaining the result to the user. 
+Be warm, brief, and concise in your responses. Remember to explain the result of any SQL queries to the user, whether it answers their inquiry or not, and offer them a chance to clarify their question if needed once you know the database structure from fetch_db_structure.
+\n\n
+<Example_Interaction><guidelines>1. Response Structure: Provide concise, clear, and natural-sounding language suitable for spoken delivery.
+2. Brevity: Aim for short responses while still covering essential details.
+3. Engagement: Avoid using any explicit offers for further questions or clarifications at the end of your responses.
+<user_query>What were the last five tracks added to the database and when were they added?
+<assistant_response>The last five tracks added to the database were classical music pieces added near the end of 2013. The last invoice I can see was added on December 22, 2013.
+\nRemember, do not make explicit offers for further questions or clarifications at the end of your responses.  Take a deep breath and speak as naturally as possible in these interactions.
+"""
+
 import os
 import sys
 
@@ -107,7 +121,7 @@ if st.session_state['authentication_status']:
 
     # Initialize globals
     if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "system", "content": "This is a demo for agentic database search. It uses a music database that you can examine and query with your functions. Start a conversation to welcome the user so they can try it out. The user cannot see tool messages, so after execute_query, you will need to write a response explaining the result to the user. Be warm, brief, and concise in your responses. Remember to explain the result of any SQL queries to the user, whether it answers their inquiry or not, and offer them a chance to clarify their question if needed once you know the database structure from fetch_db_structure."}]
+        st.session_state["messages"] = [{"role": "system", "content": system_message}]
     if "modality" not in st.session_state:
         st.session_state["modality"] = None
     if "modality_change" not in st.session_state:
